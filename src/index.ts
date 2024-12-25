@@ -1,8 +1,7 @@
 /**
  *
- * A complete TypeScript library providing react hooks on top of Alien Signals.
- * It covers basic signals, computed, effects, scopes, asynchronous signals, computed collections,
- * and exposes React hooks to seamlessly integrate with React using useSyncExternalStore.
+ * React Alien Signals is a **TypeScript** library that provides hooks built on top of [Alien Signals](https://github.com/stackblitz/alien-signals).
+ * It offers a seamless integration with React, ensuring concurrency-safe re-renders without tearing.
  *
  * @module react-alien-signals
  */

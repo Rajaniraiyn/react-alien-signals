@@ -4,7 +4,7 @@
 ![npm](https://img.shields.io/npm/v/react-alien-signals)
 ![Build](https://img.shields.io/github/actions/workflow/status/rajaniraiyn/react-alien-signals/docs.yml?branch=main)
 
-React Alien Signals is a **TypeScript** library that provides Jotai-like state management APIs built on top of [Alien Signals](https://github.com/stackblitz/alien-signals). It offers a seamless integration with React, leveraging `useSyncExternalStore` to ensure concurrency-safe re-renders and prevent tearing in concurrent React applications.
+React Alien Signals is a **TypeScript** library that provides hooks built on top of [Alien Signals](https://github.com/stackblitz/alien-signals). It offers a seamless integration with React, ensuring concurrency-safe re-renders without tearing.
 
 ## Table of Contents
 
