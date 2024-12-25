@@ -14,12 +14,19 @@ import {
   signal as alienSignal,
   unstable as alienUnstable,
   Effect,
+  type Computed,
   type Dependency,
   type EffectScope,
   type ISignal,
   type IWritableSignal,
 } from "alien-signals";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+
+declare class AsyncComputed<T = any> extends Computed {
+    get(): Promise<T>;
+    //@ts-expect-error
+    update(): Promise<boolean>;
+}
 
 /**
  * Creates a writable Alien Signal.
@@ -106,12 +113,12 @@ export function createSignalScope(): EffectScope {
  *
  * @template T - The type of the computed value.
  * @param {() => AsyncGenerator<Dependency, T>} getter - An async generator returning dependencies and ultimately a value.
- * @returns {alienUnstable.AsyncComputed<T>} The created async computed signal.
+ * @returns {AsyncComputed<T>} The created async computed signal.
  * @experimental
  */
 export function unstable_createAsyncComputed<T>(
   getter: () => AsyncGenerator<Dependency, T>,
-): alienUnstable.AsyncComputed<T> {
+): AsyncComputed<T> {
   return alienUnstable.asyncComputed<T>(getter);
 }
 
@@ -389,12 +396,12 @@ export function useSignalScope(): EffectScope {
  * ```
  *
  * @template T - The type of the computed value.
- * @param {alienUnstable.AsyncComputed<T>} alienAsyncComp - The async computed signal to read.
+ * @param {AsyncComputed<T>} alienAsyncComp - The async computed signal to read.
  * @returns {T | undefined} The resolved value (or undefined if not yet resolved).
  * @experimental
  */
 export function unstable_useAsyncComputedValue<T>(
-  alienAsyncComp: alienUnstable.AsyncComputed<T>,
+  alienAsyncComp: AsyncComputed<T>,
 ): T | undefined {
   const [value, setValue] = useState<T | undefined>(
     alienAsyncComp.currentValue,
