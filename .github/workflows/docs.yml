@@ -5,16 +5,13 @@ on:
 
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
 jobs:
   build:
     name: Build and Deploy
     permissions:
-      contents: write
+      contents: read
+      pages: write
+      id-token: write
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
