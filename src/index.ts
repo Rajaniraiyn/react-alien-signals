@@ -4,7 +4,7 @@
  * It covers basic signals, computed, effects, scopes, asynchronous signals, computed collections,
  * and exposes React hooks to seamlessly integrate with React using useSyncExternalStore.
  *
- * @module alien-react
+ * @module react-alien-signals
  */
 
 import {

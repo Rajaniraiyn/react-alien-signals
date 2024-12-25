@@ -1,10 +1,10 @@
-# Alien React Signals
+# React Alien Signals
 
-![License](https://img.shields.io/github/license/your-username/alien-react-signals)
-![npm](https://img.shields.io/npm/v/alien-react-signals)
-![Build](https://img.shields.io/github/actions/workflow/status/your-username/alien-react-signals/ci.yml?branch=main)
+![License](https://img.shields.io/github/license/rajaniraiyn/react-alien-signals)
+![npm](https://img.shields.io/npm/v/react-alien-signals)
+![Build](https://img.shields.io/github/actions/workflow/status/rajaniraiyn/react-alien-signals/docs.yml?branch=main)
 
-Alien React Signals is a **TypeScript** library that provides Jotai-like state management APIs built on top of [Alien Signals](https://github.com/stackblitz/alien-signals). It offers a seamless integration with React, leveraging `useSyncExternalStore` to ensure concurrency-safe re-renders and prevent tearing in concurrent React applications.
+React Alien Signals is a **TypeScript** library that provides Jotai-like state management APIs built on top of [Alien Signals](https://github.com/stackblitz/alien-signals). It offers a seamless integration with React, leveraging `useSyncExternalStore` to ensure concurrency-safe re-renders and prevent tearing in concurrent React applications.
 
 ## Table of Contents
 
@@ -39,10 +39,10 @@ Alien React Signals is a **TypeScript** library that provides Jotai-like state m
 
 ## Installation
 
-Install `alien-react-signals` and its peer dependency `alien-signals` via npm:
+Install `react-alien-signals` and its peer dependency `alien-signals` via npm:
 
 ```bash
-npm install alien-react-signals alien-signals
+npm install react-alien-signals alien-signals
 ```
 
 ## Usage
@@ -53,7 +53,7 @@ Create a writable signal and use it within your components.
 
 ```tsx
 import React from "react";
-import { createSignal, useSignal } from "alien-react-signals";
+import { createSignal, useSignal } from "react-alien-signals";
 
 const countSignal = createSignal(0);
 
@@ -81,7 +81,7 @@ import {
   createSignal,
   createComputed,
   useSignalValue,
-} from "alien-react-signals";
+} from "react-alien-signals";
 
 const countSignal = createSignal(1);
 const doubleCount = createComputed(() => countSignal.get() * 2);
@@ -105,7 +105,7 @@ import {
   createSignal,
   createEffect,
   useSignalScope,
-} from "alien-react-signals";
+} from "react-alien-signals";
 
 const countSignal = createSignal(0);
 
@@ -134,7 +134,7 @@ import {
   createSignal,
   unstable_createAsyncComputed,
   unstable_useAsyncComputedValue,
-} from "alien-react-signals";
+} from "react-alien-signals";
 
 const dataSignal = createSignal("initial");
 
@@ -167,7 +167,7 @@ import {
   unstable_createComputedArray,
   unstable_createComputedSet,
   useSignalValue,
-} from "alien-react-signals";
+} from "react-alien-signals";
 
 const numbersSignal = createSignal([1, 2, 3]);
 const doubledNumbers = unstable_createComputedArray(
@@ -195,7 +195,7 @@ export default CollectionsDisplay;
 
 ## React Hooks
 
-Alien React Signals provides several hooks to interact with signals:
+React Alien Signals provides several hooks to interact with signals:
 
 - `useSignal(signal)`: Returns `[value, setValue]`.
 - `useSignalValue(signal)`: Returns the current value (read-only).
