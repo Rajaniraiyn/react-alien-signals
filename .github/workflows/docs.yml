@@ -10,7 +10,6 @@ permissions:
   pages: write
   id-token: write
 
-permissions: {}
 jobs:
   build:
     permissions:
