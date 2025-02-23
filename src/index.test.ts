@@ -4,36 +4,18 @@ import { act, cleanup, renderHook } from "@testing-library/react";
 import { afterEach, describe, expect, it, jest } from "bun:test";
 
 import {
-  createSignal,
   createComputed,
   createEffect,
+  createSignal,
   createSignalScope,
-  unstable_createAsyncComputed,
-  unstable_createAsyncEffect,
-  unstable_createComputedArray,
-  unstable_createComputedSet,
-  unstable_createEqualityComputed,
-  // React hooks
-  useSignal,
-  useSignalValue,
+  useComputed,
   useSetSignal,
+  useSignal,
   useSignalEffect,
   useSignalScope,
-  unstable_useAsyncComputedValue,
-  unstable_useAsyncEffect,
-} from "./index";
+  useSignalValue,
+} from ".";
 
-/**
- * Minimal mock of `Dependency` from Alien Signals.
- */
-function mockDependency(id: number) {
-  return {
-    subs: undefined,
-    subsTail: undefined,
-    lastTrackedId: id,
-    flags: 0, // SubscriberFlags if needed
-  };
-}
 
 // Register Happy DOM environment and jest-dom matchers
 GlobalRegistrator.register();
@@ -49,41 +31,24 @@ describe("Alien React Library", () => {
    * ------------------------------------------------------------------ */
   it("should create a writable signal", () => {
     const mySignal = createSignal(0);
-    expect(mySignal.get()).toBe(0);
+    expect(mySignal()).toBe(0);
 
-    mySignal.set(10);
-    expect(mySignal.get()).toBe(10);
+    mySignal(10);
+    expect(mySignal()).toBe(10);
   });
 
   it("should create and update a computed signal", () => {
     const countSignal = createSignal(1);
-    const doubleSignal = createComputed(() => countSignal.get() * 2);
+    const doubleSignal = createComputed(() => countSignal() * 2);
 
-    expect(doubleSignal.get()).toBe(2);
+    expect(doubleSignal()).toBe(2);
 
-    countSignal.set(2);
-    expect(doubleSignal.get()).toBe(4);
+    countSignal(2);
+    expect(doubleSignal()).toBe(4);
 
     // Another update
-    countSignal.set(3);
-    expect(doubleSignal.get()).toBe(6);
-  });
-
-  it("should not recompute equalityComputed if values are deeply equal", () => {
-    const spy = jest.fn();
-    const eqComp = unstable_createEqualityComputed(() => {
-      spy();
-      return { foo: "bar" };
-    });
-
-    const val1 = eqComp.get();
-    expect(val1).toEqual({ foo: "bar" });
-    expect(spy).toHaveBeenCalledTimes(1);
-
-    // Re-read without changing the underlying data
-    const val2 = eqComp.get();
-    expect(val2).toBe(val1);
-    expect(spy).toHaveBeenCalledTimes(1);
+    countSignal(3);
+    expect(doubleSignal()).toBe(6);
   });
 
   /* ------------------------------------------------------------------
@@ -94,128 +59,33 @@ describe("Alien React Library", () => {
     let observed = 0;
 
     createEffect(() => {
-      observed = countSignal.get();
+      observed = countSignal();
     });
 
     expect(observed).toBe(1);
 
-    countSignal.set(2);
+    countSignal(2);
     expect(observed).toBe(2);
   });
 
   it("should create a signal scope", () => {
-    const scope = createSignalScope();
-    expect(scope).toBeDefined();
-
     let value = 0;
-    scope.run(() => {
+    const stopScope = createSignalScope(() => {
       createEffect(() => {
         value = 99;
       });
     });
+    expect(stopScope).toBeDefined();
+
+
     expect(value).toBe(99);
 
-    scope.stop(); // stop the scope
+    stopScope(); // stop the scope
   });
+
 
   /* ------------------------------------------------------------------
-   *  3) ASYNC COMPUTED & EFFECT
-   * ------------------------------------------------------------------ */
-  it("should create an async computed signal", async () => {
-    // yield a mock Dependency, then return final
-    const asyncComp = unstable_createAsyncComputed<number>(async function* () {
-      yield mockDependency(42);
-      return 100;
-    });
-
-    const val = await asyncComp.get();
-    expect(val).toBe(100);
-  });
-
-  it("should update an async computed if dependencies change", async () => {
-    const baseSignal = createSignal(2);
-
-    const asyncComp = unstable_createAsyncComputed<number>(async function* () {
-      // Create a dependency that tracks the signal value
-      yield mockDependency(baseSignal.get());
-      // Return double the current baseSignal value
-      return baseSignal.get() * 2;
-    });
-
-    // First read => 2 => 4
-    const initial = await asyncComp.get();
-    expect(initial).toBe(4);
-
-    // Change baseSignal => 3 => expect 6
-    baseSignal.set(3);
-    // Force a recomputation by yielding the new dependency value
-    await asyncComp.update();
-    const nextVal = await asyncComp.get();
-    expect(nextVal).toBe(6);
-  });
-  it("should create an async effect", async () => {
-    let result = 0;
-
-    /**
-     * Because we patched `unstable_createAsyncEffect` to return a Promise,
-     * we can now await it. Inside, we yield a mock dependency, then set `result`.
-     */
-    await unstable_createAsyncEffect(async function* () {
-      yield mockDependency(1);
-      result = 42;
-    });
-
-    expect(result).toBe(42);
-  });
-
-  /* ------------------------------------------------------------------
-   *  4) COMPUTED ARRAYS & SETS
-   * ------------------------------------------------------------------ */
-  it("should create and update a computed array", () => {
-    const numbersSignal = createSignal([1, 2, 3]);
-    const compArray = unstable_createComputedArray(
-      numbersSignal,
-      (itemSignal) => () => {
-        return itemSignal.get() * 2;
-      },
-    );
-
-    // The returned object might be a proxy. Spread to compare as normal array.
-    expect([...compArray]).toEqual([2, 4, 6]);
-
-    numbersSignal.set([2, 3, 4]);
-    expect([...compArray]).toEqual([4, 6, 8]);
-  });
-
-  it("should handle a computed array with increased length", () => {
-    const arraySignal = createSignal([1]);
-    const compArray = unstable_createComputedArray(
-      arraySignal,
-      (itemSignal, i) => () => {
-        // Just for demonstration, sum the item + index
-        return itemSignal.get() + i;
-      },
-    );
-
-    expect([...compArray]).toEqual([1]);
-
-    arraySignal.set([1, 2, 3]);
-    expect([...compArray]).toEqual([1, 3, 5]);
-  });
-
-  it("should create a computed set and detect changes", () => {
-    const setSignal = createSignal(new Set([1, 2]));
-    const compSet = unstable_createComputedSet(setSignal);
-
-    expect(compSet.get()).toEqual(new Set([1, 2]));
-
-    // Modify the set
-    setSignal.set(new Set([1, 2, 3]));
-    expect(compSet.get()).toEqual(new Set([1, 2, 3]));
-  });
-
-  /* ------------------------------------------------------------------
-   *  5) REACT HOOKS: Sync
+   *  3) REACT HOOKS
    * ------------------------------------------------------------------ */
   it("useSignal should return [value, setter]", () => {
     const countSignal = createSignal(0);
@@ -232,7 +102,7 @@ describe("Alien React Library", () => {
     const { result } = renderHook(() => useSignalValue(countSignal));
 
     expect(result.current).toBe(0);
-    act(() => countSignal.set(5));
+    act(() => countSignal(5));
     expect(result.current).toBe(5);
   });
 
@@ -243,94 +113,315 @@ describe("Alien React Library", () => {
     act(() => {
       result.current(10);
     });
-    expect(countSignal.get()).toBe(10);
+    expect(countSignal()).toBe(10);
 
     // Functional update
     act(() => {
       result.current((prev) => prev + 5);
     });
-    expect(countSignal.get()).toBe(15);
+    expect(countSignal()).toBe(15);
   });
 
   it("useSignalEffect should register an effect in React", () => {
     const countSignal = createSignal(0);
     const effectFn = jest.fn(() => {
-      countSignal.get(); // track
+      countSignal(); // track
     });
 
     renderHook(() => useSignalEffect(effectFn));
     expect(effectFn).toHaveBeenCalledTimes(1);
 
-    act(() => countSignal.set(5));
+    act(() => countSignal(5));
     expect(effectFn).toHaveBeenCalledTimes(2);
   });
 
   it("useSignalScope should create and manage an effect scope in React", () => {
-    const { result, unmount } = renderHook(() => useSignalScope());
+    const { result, unmount } = renderHook(() => useSignalScope(() => {}));
     expect(result.current).toBeDefined();
-    unmount(); // triggers scope.stop() internally
+    unmount(); // triggers scope stopper internally
+  });
+
+  it("useComputed should return a computed value", () => {
+    const countSignal = createSignal(0);
+    const { result } = renderHook(() => useComputed(() => countSignal() * 2));
+
+    expect(result.current).toBe(0);
+    act(() => countSignal(5));
+    expect(result.current).toBe(10);
   });
 
   /* ------------------------------------------------------------------
-   *  6) REACT HOOKS: Async
+   *  4) ADVANCED SIGNAL SCENARIOS
    * ------------------------------------------------------------------ */
-  it("useAsyncComputedValue should read an async computed signal", async () => {
-    const asyncComp = unstable_createAsyncComputed<number>(async function* () {
-      yield mockDependency(1);
-      return 42;
+  it("should handle nested signal updates correctly", () => {
+    const outerSignal = createSignal(1);
+    const innerSignal = createSignal(2);
+    const computedSignal = createComputed(() => outerSignal() * innerSignal());
+
+    expect(computedSignal()).toBe(2); // 1 * 2
+
+    act(() => {
+      outerSignal(2);
+      innerSignal(3);
     });
-
-    const { result } = renderHook(() =>
-      unstable_useAsyncComputedValue(asyncComp),
-    );
-
-    // Initially undefined (since we haven't awaited yet)
-    expect(result.current).toBeUndefined();
-
-    // Force resolution
-    await act(async () => {
-      await asyncComp.get();
-    });
-    expect(result.current).toBe(42);
+    expect(computedSignal()).toBe(6); // 2 * 3
   });
 
-  //   it("useAsyncComputedValue should re-resolve if dependency changes", async () => {
-  //     const baseSignal = createSignal(2);
-  //     const asyncComp = unstable_createAsyncComputed<number>(async function* () {
-  //       yield baseSignal;
-  //       return baseSignal.get() * 2;
-  //     });
-
-  //     const { result } = renderHook(() =>
-  //       unstable_useAsyncComputedValue(asyncComp)
-  //     );
-
-  //     // Initially undefined
-  //     expect(result.current).toBeUndefined();
-
-  //     // Resolve first => 2 => 4
-  //     await act(async () => {
-  //       await asyncComp.get();
-  //     });
-  //     expect(result.current).toBe(4);
-
-  //     // Now set baseSignal => 5 => expect 10
-  //     act(() => {
-  //       baseSignal.set(5);
-  //     });
-  //     await act(async () => {
-  //       await asyncComp.get();
-  //     });
-  //     expect(result.current).toBe(10);
-  //   });
-
-  it("useAsyncEffect should run an async effect in a React component", async () => {
-    const effectFn = jest.fn(async function* () {
-      yield mockDependency(1);
+  it("should handle signal updates within effects", () => {
+    const countSignal = createSignal(0);
+    const doubleSignal = createSignal(0);
+    
+    createEffect(() => {
+      doubleSignal(countSignal() * 2);
     });
 
-    // Because we patched `unstable_createAsyncEffect` to run, the effect is started immediately
-    renderHook(() => unstable_useAsyncEffect(effectFn));
+    expect(doubleSignal()).toBe(0);
+    
+    act(() => {
+      countSignal(5);
+    });
+    expect(doubleSignal()).toBe(10);
+  });
+
+  it("should properly cleanup effects when scope is stopped", () => {
+    const countSignal = createSignal(0);
+    let effectRuns = 0;
+
+    const stopScope = createSignalScope(() => {
+      createEffect(() => {
+        countSignal(); // track
+        effectRuns++;
+      });
+    });
+
+    expect(effectRuns).toBe(1);
+    
+    act(() => {
+      countSignal(1);
+    });
+    expect(effectRuns).toBe(2);
+
+    stopScope(); // Stop all effects in scope
+
+    act(() => {
+      countSignal(2);
+    });
+    expect(effectRuns).toBe(2); // Should not increase after scope is stopped
+  });
+
+  /* ------------------------------------------------------------------
+   *  5) REACT HOOK EDGE CASES
+   * ------------------------------------------------------------------ */
+  it("useSignal should handle functional updates correctly", () => {
+    const countSignal = createSignal(0);
+    const { result } = renderHook(() => useSignal(countSignal));
+    const [, setCount] = result.current;
+
+    act(() => {
+      setCount(prev => prev + 1);
+      setCount(prev => prev + 1);
+    });
+    expect(result.current[0]).toBe(2);
+  });
+
+  it("useComputed should update when dependencies change", () => {
+    const countSignal = createSignal(0);
+    const multiplierSignal = createSignal(2);
+    
+    const { result } = renderHook(() => 
+      useComputed(() => countSignal() * multiplierSignal())
+    );
+
+    expect(result.current).toBe(0);
+    
+    act(() => {
+      countSignal(5);
+    });
+    expect(result.current).toBe(10);
+
+    act(() => {
+      multiplierSignal(3);
+    });
+    expect(result.current).toBe(15);
+  });
+
+  it("useSignalEffect should handle cleanup correctly", () => {
+    const countSignal = createSignal(0);
+    const cleanupFn = jest.fn();
+    
+    const { unmount } = renderHook(() => 
+      useSignalEffect(() => {
+        countSignal(); // track
+        return cleanupFn;
+      })
+    );
+
+    act(() => {
+      countSignal(1);
+    });
+    expect(cleanupFn).toHaveBeenCalledTimes(1);
+
+    unmount();
+    expect(cleanupFn).toHaveBeenCalledTimes(2);
+  });
+
+  /* ------------------------------------------------------------------
+   *  6) PERFORMANCE & EFFICIENCY TESTS
+   * ------------------------------------------------------------------ */
+  it("should handle signal updates correctly", () => {
+    const signal = createSignal({ a: 1, b: 2 });
+    
+    const { result } = renderHook(() => useSignal(signal));
+    
+    // Initial value check
+    expect(result.current[0]).toEqual({ a: 1, b: 2 });
+    
+    // Update value
+    act(() => {
+      result.current[1]({ a: 2, b: 2 });
+    });
+    
+    // Check both the signal and the hook value
+    expect(signal()).toEqual({ a: 2, b: 2 });
+    expect(result.current[0]).toEqual({ a: 2, b: 2 });
+  });
+
+  it("should handle multiple signal updates", () => {
+    const signal = createSignal(0);
+    const effectFn = jest.fn();
+    
+    renderHook(() => useSignalEffect(() => {
+      signal();
+      effectFn();
+    }));
+
     expect(effectFn).toHaveBeenCalledTimes(1);
+
+    // Multiple updates
+    act(() => {
+      signal(1);
+      signal(2);
+      signal(3);
+    });
+    
+    expect(effectFn).toHaveBeenCalledTimes(4); // Initial + 3 updates
+  });
+
+  /* ------------------------------------------------------------------
+   *  7) EDGE CASES & ERROR HANDLING
+   * ------------------------------------------------------------------ */
+  it("should handle undefined/null signal values", () => {
+    const signal = createSignal<number | undefined | null>(123);
+    const { result } = renderHook(() => useSignal(signal));
+    
+    act(() => {
+      result.current[1](undefined);
+    });
+    // @ts-expect-error
+    expect(result.current[0]).toBe(undefined);
+    
+    act(() => {
+      result.current[1](null);
+    });
+    expect(result.current[0]).toBe(null);
+  });
+
+  it("should handle computed dependencies correctly", () => {
+    const a = createSignal(1);
+    const b = createSignal(2);
+    
+    const computedA = createComputed(() => b() + 1);
+    const computedB = createComputed(() => a() + 1);
+    
+    const { result } = renderHook(() => useComputed(() => computedA() + computedB()));
+    expect(result.current).toBe(5); // (2 + 1) + (1 + 1)
+    
+    act(() => {
+      a(2);
+    });
+    expect(result.current).toBe(6); // (2 + 1) + (2 + 1)
+  });
+
+  /* ------------------------------------------------------------------
+   *  8) MEMORY MANAGEMENT & CLEANUP
+   * ------------------------------------------------------------------ */
+  it("should cleanup all subscriptions on unmount", () => {
+    const signal = createSignal(0);
+    const effectFn = jest.fn();
+    let hook: any;
+    
+    act(() => {
+      hook = renderHook(() => {
+        useSignal(signal);
+        useComputed(() => signal() * 2);
+        useSignalEffect(() => {
+          signal();
+          effectFn();
+        });
+      });
+    });
+
+    expect(effectFn).toHaveBeenCalledTimes(1);
+    
+    // Unmount should cleanup all subscriptions
+    hook.unmount();
+    
+    act(() => {
+      signal(5);
+    });
+    expect(effectFn).toHaveBeenCalledTimes(1); // Should not increase after unmount
+  });
+
+  it("should handle multiple mount/unmount cycles", () => {
+    const signal = createSignal(0);
+    const effectFn = jest.fn();
+    
+    function mount() {
+      return renderHook(() => {
+        useSignalEffect(() => {
+          signal();
+          effectFn();
+        });
+      });
+    }
+
+    // Multiple mount/unmount cycles
+    const hook1 = mount();
+    expect(effectFn).toHaveBeenCalledTimes(1);
+    
+    hook1.unmount();
+    const hook2 = mount();
+    expect(effectFn).toHaveBeenCalledTimes(2);
+    
+    hook2.unmount();
+    expect(effectFn).toHaveBeenCalledTimes(2);
+  });
+
+  /* ------------------------------------------------------------------
+   *  9) CONCURRENT MODE COMPATIBILITY
+   * ------------------------------------------------------------------ */
+  it("should handle concurrent updates correctly", async () => {
+    const signal = createSignal(0);
+    const effectFn = jest.fn();
+    
+    const { result } = renderHook(() => {
+      useSignalEffect(() => {
+        signal();
+        effectFn();
+      });
+      return useSignal(signal);
+    });
+
+    // Perform multiple updates concurrently in a single batched act call
+    await act(async () => {
+      await Promise.all([
+        Promise.resolve().then(() => result.current[1](1)),
+        Promise.resolve().then(() => result.current[1](2)),
+        Promise.resolve().then(() => result.current[1](3)),
+        Promise.resolve().then(() => result.current[1](4))
+      ]);
+    });
+
+    expect(signal()).toBe(4);
   });
 });
