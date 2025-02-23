@@ -15,6 +15,7 @@
     "LICENSE"
   ],
   "scripts": {
+    "prepublishOnly": "npm run build",
     "build": "tsup",
     "docs": "npx typedoc src/index.ts",
     "docs:preview": "npx typedoc src/index.ts && npx serve docs"
