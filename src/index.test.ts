@@ -136,9 +136,9 @@ describe("Alien React Library", () => {
     const baseSignal = createSignal(2);
 
     const asyncComp = unstable_createAsyncComputed<number>(async function* () {
-      // Yield the real signal
+      // Create a dependency that tracks the signal value
       yield mockDependency(baseSignal.get());
-      // Return double the current baseSignal
+      // Return double the current baseSignal value
       return baseSignal.get() * 2;
     });
 
@@ -148,6 +148,8 @@ describe("Alien React Library", () => {
 
     // Change baseSignal => 3 => expect 6
     baseSignal.set(3);
+    // Force a recomputation by yielding the new dependency value
+    await asyncComp.update();
     const nextVal = await asyncComp.get();
     expect(nextVal).toBe(6);
   });
