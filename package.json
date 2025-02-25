@@ -44,5 +44,6 @@
     "alien-signals": {
       "optional": false
     }
-  }
+  },
+  "workspaces": ["playground"]
 }
