@@ -278,11 +278,11 @@ export function useSignalScope<T>(callback: () => T): () => void {
 export function useComputed<T>(
   getter: () => T,
   /**
-   * Dependencie array of dependencies used in the getter.
-   * This is similar to the dependency array you would use in `useMemo`, `useCallback` and `useEffect`, etc.
+   * Dependency array for values read inside `getter`.
+   * Behaves like the dependency array of `useMemo` / `useEffect`.
    */
   deps: DependencyList,
 ): T {
-  const computed = useMemo(() => createComputed(getter), [deps]);
+  const computed = useMemo(() => createComputed(getter), deps);
   return useSignalValue(computed);
 }

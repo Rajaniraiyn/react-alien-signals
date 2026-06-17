@@ -268,6 +268,53 @@ describe("Alien React Library", () => {
     expect(renders).toBe(2);
   });
 
+  it("useComputed should reuse the computed across re-renders when deps are unchanged", () => {
+    const sig = createSignal(1);
+    let getterCalls = 0;
+
+    const { result, rerender } = renderHook(() =>
+      useComputed(() => {
+        getterCalls++;
+        return sig() * 2;
+      }, []),
+    );
+
+    expect(result.current).toBe(2);
+    const callsAfterMount = getterCalls;
+
+    rerender();
+    rerender();
+    rerender();
+
+    // If `useMemo` deps were wrapped (e.g. `[deps]` instead of `deps`),
+    // the computed would be rebuilt every render and the getter would
+    // run again on each re-read.
+    expect(getterCalls).toBe(callsAfterMount);
+    expect(result.current).toBe(2);
+  });
+
+  it("useComputed should rebuild the computed when deps change", () => {
+    const sig = createSignal(1);
+    let getterCalls = 0;
+
+    const { result, rerender } = renderHook(
+      ({ offset }: { offset: number }) =>
+        useComputed(() => {
+          getterCalls++;
+          return sig() + offset;
+        }, [offset]),
+      { initialProps: { offset: 10 } },
+    );
+
+    expect(result.current).toBe(11);
+    const callsAfterFirst = getterCalls;
+
+    rerender({ offset: 20 });
+
+    expect(result.current).toBe(21);
+    expect(getterCalls).toBeGreaterThan(callsAfterFirst);
+  });
+
   it("useSignalEffect should handle cleanup correctly", () => {
     const countSignal = createSignal(0);
     const cleanupFn = jest.fn();
