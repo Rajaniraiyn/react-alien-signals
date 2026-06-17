@@ -26,7 +26,13 @@ import {
   effectScope as alienEffectScope,
   signal as alienSignal,
 } from "alien-signals";
-import { useEffect, useMemo, useSyncExternalStore, useCallback, useRef } from "react";
+import {
+  useEffect,
+  useMemo,
+  useSyncExternalStore,
+  useCallback,
+  type DependencyList,
+} from "react";
 
 /**
  * WritableSignal is a function that returns the current signal value when called without arguments,
@@ -140,22 +146,8 @@ export function createSignalScope<T>(callback: () => T): () => void {
 export function useSignal<T>(
   signal: WritableSignal<T>,
 ): [T, (val: T | ((oldVal: T) => T)) => void] {
-  const value = useSyncExternalStore(
-    (callback) => createEffect(() => {
-      signal(); // track
-      callback(); // notify React
-    }),
-    () => signal(),
-    () => signal(),
-  );
-
-  const setValue = useCallback((val: T | ((oldVal: T) => T)) => {
-    if (typeof val === "function") {
-      signal((val as (oldVal: T) => T)(signal()));
-    } else {
-      signal(val);
-    }
-  }, [signal]);
+  const value = useSignalValue(signal);
+  const setValue = useSetSignal(signal);
 
   return [value, setValue];
 }
@@ -179,11 +171,25 @@ export function useSignal<T>(
  * ```
  */
 export function useSignalValue<T>(signal: WritableSignal<T>): T {
+  const subscribe = useCallback(
+    (callback: () => void) => {
+      let isFirst = true;
+
+      return createEffect(() => {
+        signal(); // track dependencies
+
+        if (isFirst) {
+          isFirst = false;
+        } else {
+          callback(); // notify React only on actual changes
+        }
+      });
+    },
+    [signal],
+  );
+
   return useSyncExternalStore(
-    (callback) => createEffect(() => {
-      signal(); // track
-      callback(); // notify React
-    }),
+    subscribe,
     () => signal(),
     () => signal(),
   );
@@ -209,13 +215,16 @@ export function useSignalValue<T>(signal: WritableSignal<T>): T {
 export function useSetSignal<T>(
   signal: WritableSignal<T>,
 ): (val: T | ((oldVal: T) => T)) => void {
-  return useCallback((val) => {
-    if (typeof val === "function") {
-      signal((val as (oldVal: T) => T)(signal()));
-    } else {
-      signal(val);
-    }
-  }, [signal]);
+  return useCallback(
+    (val) => {
+      if (typeof val === "function") {
+        signal((val as (oldVal: T) => T)(signal()));
+      } else {
+        signal(val);
+      }
+    },
+    [signal],
+  );
 }
 
 /**
@@ -228,7 +237,7 @@ export function useSignalEffect(fn: () => void | (() => void)): void {
       if (cleanup) cleanup();
       cleanup = fn();
     });
-    
+
     return () => {
       if (cleanup) cleanup();
       stop();
@@ -266,7 +275,14 @@ export function useSignalScope<T>(callback: () => T): () => void {
   return stopScope;
 }
 
-export function useComputed<T>(getter: () => T): T {
-  const computed = useMemo(() => createComputed(getter), [getter]);
+export function useComputed<T>(
+  getter: () => T,
+  /**
+   * Dependencie array of dependencies used in the getter.
+   * This is similar to the dependency array you would use in `useMemo`, `useCallback` and `useEffect`, etc.
+   */
+  deps: DependencyList,
+): T {
+  const computed = useMemo(() => createComputed(getter), [deps]);
   return useSignalValue(computed);
 }

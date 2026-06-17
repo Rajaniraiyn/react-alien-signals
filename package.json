@@ -15,6 +15,7 @@
     "LICENSE"
   ],
   "scripts": {
+    "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run build",
     "build": "tsup",
     "docs": "npx typedoc src/index.ts",
@@ -45,5 +46,7 @@
       "optional": false
     }
   },
-  "workspaces": ["playground"]
+  "workspaces": [
+    "playground"
+  ]
 }

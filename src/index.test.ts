@@ -16,7 +16,6 @@ import {
   useSignalValue,
 } from ".";
 
-
 // Register Happy DOM environment and jest-dom matchers
 GlobalRegistrator.register();
 expect.extend(matchers);
@@ -77,12 +76,10 @@ describe("Alien React Library", () => {
     });
     expect(stopScope).toBeDefined();
 
-
     expect(value).toBe(99);
 
     stopScope(); // stop the scope
   });
-
 
   /* ------------------------------------------------------------------
    *  3) REACT HOOKS
@@ -143,7 +140,9 @@ describe("Alien React Library", () => {
 
   it("useComputed should return a computed value", () => {
     const countSignal = createSignal(0);
-    const { result } = renderHook(() => useComputed(() => countSignal() * 2));
+    const { result } = renderHook(() =>
+      useComputed(() => countSignal() * 2, []),
+    );
 
     expect(result.current).toBe(0);
     act(() => countSignal(5));
@@ -170,13 +169,13 @@ describe("Alien React Library", () => {
   it("should handle signal updates within effects", () => {
     const countSignal = createSignal(0);
     const doubleSignal = createSignal(0);
-    
+
     createEffect(() => {
       doubleSignal(countSignal() * 2);
     });
 
     expect(doubleSignal()).toBe(0);
-    
+
     act(() => {
       countSignal(5);
     });
@@ -195,7 +194,7 @@ describe("Alien React Library", () => {
     });
 
     expect(effectRuns).toBe(1);
-    
+
     act(() => {
       countSignal(1);
     });
@@ -218,8 +217,8 @@ describe("Alien React Library", () => {
     const [, setCount] = result.current;
 
     act(() => {
-      setCount(prev => prev + 1);
-      setCount(prev => prev + 1);
+      setCount((prev) => prev + 1);
+      setCount((prev) => prev + 1);
     });
     expect(result.current[0]).toBe(2);
   });
@@ -227,13 +226,13 @@ describe("Alien React Library", () => {
   it("useComputed should update when dependencies change", () => {
     const countSignal = createSignal(0);
     const multiplierSignal = createSignal(2);
-    
-    const { result } = renderHook(() => 
-      useComputed(() => countSignal() * multiplierSignal())
+
+    const { result } = renderHook(() =>
+      useComputed(() => countSignal() * multiplierSignal(), []),
     );
 
     expect(result.current).toBe(0);
-    
+
     act(() => {
       countSignal(5);
     });
@@ -245,15 +244,39 @@ describe("Alien React Library", () => {
     expect(result.current).toBe(15);
   });
 
+  it("useComputed should not enter a render loop after a dependency update", () => {
+    const countSignal = createSignal(0);
+    let renders = 0;
+
+    const { result } = renderHook(() => {
+      renders++;
+
+      if (renders > 20) {
+        throw new Error("Infinite render loop");
+      }
+
+      return useComputed(() => ({ count: countSignal() }), []);
+    });
+
+    expect(result.current).toEqual({ count: 0 });
+
+    act(() => {
+      countSignal(1);
+    });
+
+    expect(result.current).toEqual({ count: 1 });
+    expect(renders).toBe(2);
+  });
+
   it("useSignalEffect should handle cleanup correctly", () => {
     const countSignal = createSignal(0);
     const cleanupFn = jest.fn();
-    
-    const { unmount } = renderHook(() => 
+
+    const { unmount } = renderHook(() =>
       useSignalEffect(() => {
         countSignal(); // track
         return cleanupFn;
-      })
+      }),
     );
 
     act(() => {
@@ -270,17 +293,17 @@ describe("Alien React Library", () => {
    * ------------------------------------------------------------------ */
   it("should handle signal updates correctly", () => {
     const signal = createSignal({ a: 1, b: 2 });
-    
+
     const { result } = renderHook(() => useSignal(signal));
-    
+
     // Initial value check
     expect(result.current[0]).toEqual({ a: 1, b: 2 });
-    
+
     // Update value
     act(() => {
       result.current[1]({ a: 2, b: 2 });
     });
-    
+
     // Check both the signal and the hook value
     expect(signal()).toEqual({ a: 2, b: 2 });
     expect(result.current[0]).toEqual({ a: 2, b: 2 });
@@ -289,11 +312,13 @@ describe("Alien React Library", () => {
   it("should handle multiple signal updates", () => {
     const signal = createSignal(0);
     const effectFn = jest.fn();
-    
-    renderHook(() => useSignalEffect(() => {
-      signal();
-      effectFn();
-    }));
+
+    renderHook(() =>
+      useSignalEffect(() => {
+        signal();
+        effectFn();
+      }),
+    );
 
     expect(effectFn).toHaveBeenCalledTimes(1);
 
@@ -303,7 +328,7 @@ describe("Alien React Library", () => {
       signal(2);
       signal(3);
     });
-    
+
     expect(effectFn).toHaveBeenCalledTimes(4); // Initial + 3 updates
   });
 
@@ -313,13 +338,13 @@ describe("Alien React Library", () => {
   it("should handle undefined/null signal values", () => {
     const signal = createSignal<number | undefined | null>(123);
     const { result } = renderHook(() => useSignal(signal));
-    
+
     act(() => {
       result.current[1](undefined);
     });
     // @ts-expect-error
     expect(result.current[0]).toBe(undefined);
-    
+
     act(() => {
       result.current[1](null);
     });
@@ -329,13 +354,15 @@ describe("Alien React Library", () => {
   it("should handle computed dependencies correctly", () => {
     const a = createSignal(1);
     const b = createSignal(2);
-    
+
     const computedA = createComputed(() => b() + 1);
     const computedB = createComputed(() => a() + 1);
-    
-    const { result } = renderHook(() => useComputed(() => computedA() + computedB()));
+
+    const { result } = renderHook(() =>
+      useComputed(() => computedA() + computedB(), []),
+    );
     expect(result.current).toBe(5); // (2 + 1) + (1 + 1)
-    
+
     act(() => {
       a(2);
     });
@@ -349,11 +376,11 @@ describe("Alien React Library", () => {
     const signal = createSignal(0);
     const effectFn = jest.fn();
     let hook: any;
-    
+
     act(() => {
       hook = renderHook(() => {
         useSignal(signal);
-        useComputed(() => signal() * 2);
+        useComputed(() => signal() * 2, []);
         useSignalEffect(() => {
           signal();
           effectFn();
@@ -362,10 +389,10 @@ describe("Alien React Library", () => {
     });
 
     expect(effectFn).toHaveBeenCalledTimes(1);
-    
+
     // Unmount should cleanup all subscriptions
     hook.unmount();
-    
+
     act(() => {
       signal(5);
     });
@@ -375,7 +402,7 @@ describe("Alien React Library", () => {
   it("should handle multiple mount/unmount cycles", () => {
     const signal = createSignal(0);
     const effectFn = jest.fn();
-    
+
     function mount() {
       return renderHook(() => {
         useSignalEffect(() => {
@@ -388,11 +415,11 @@ describe("Alien React Library", () => {
     // Multiple mount/unmount cycles
     const hook1 = mount();
     expect(effectFn).toHaveBeenCalledTimes(1);
-    
+
     hook1.unmount();
     const hook2 = mount();
     expect(effectFn).toHaveBeenCalledTimes(2);
-    
+
     hook2.unmount();
     expect(effectFn).toHaveBeenCalledTimes(2);
   });
@@ -403,7 +430,7 @@ describe("Alien React Library", () => {
   it("should handle concurrent updates correctly", async () => {
     const signal = createSignal(0);
     const effectFn = jest.fn();
-    
+
     const { result } = renderHook(() => {
       useSignalEffect(() => {
         signal();
@@ -418,7 +445,7 @@ describe("Alien React Library", () => {
         Promise.resolve().then(() => result.current[1](1)),
         Promise.resolve().then(() => result.current[1](2)),
         Promise.resolve().then(() => result.current[1](3)),
-        Promise.resolve().then(() => result.current[1](4))
+        Promise.resolve().then(() => result.current[1](4)),
       ]);
     });
 

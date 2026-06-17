@@ -53,7 +53,7 @@ const count = createSignal(0);
 
 function Counter() {
   const [value, setValue] = useSignal(count);
-  
+
   return (
     <button onClick={() => setValue(value + 1)}>
       Count: {value}
@@ -93,7 +93,7 @@ function Logger() {
       console.log('Count changed:', count());
     });
   });
-  
+
   return null;
 }
 ```
@@ -107,7 +107,24 @@ React Alien Signals provides several hooks to interact with signals:
 - `useSetSignal(signal)`: Returns a setter function (write-only)
 - `useSignalEffect(effectFn)`: Runs a side effect based on signal changes
 - `useSignalScope(callback)`: Manages effect scopes within a component
-- `useComputed(getter)`: Creates and subscribes to a computed signal
+- `useComputed(getter, deps)`: Creates and subscribes to a computed signal
+
+### `useComputed(getter, deps)`
+
+The `useComputed` hook expects a getter and a dependency array.
+The dependency array is similar to a dependency array used in [`useMemo`](https://react.dev/reference/react/useMemo) or [`useEffect`](https://react.dev/reference/react/useEffect)
+Here is an example
+
+```ts
+function Component({ a }) {
+  useComputed(
+    () => {
+      return a + mySignal();
+    },
+    [a, mySignal]
+  );
+}
+```
 
 ## Contributing
 
