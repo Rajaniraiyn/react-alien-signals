@@ -389,8 +389,7 @@ describe("Alien React Library", () => {
     act(() => {
       result.current[1](undefined);
     });
-    // @ts-expect-error
-    expect(result.current[0]).toBe(undefined);
+    expect(result.current[0]).toBeUndefined();
 
     act(() => {
       result.current[1](null);
