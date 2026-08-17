@@ -1,6 +1,6 @@
 {
   "name": "react-alien-signals",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Concurrency-safe React hooks for Alien Signals",
   "license": "MIT",
   "keywords": [
