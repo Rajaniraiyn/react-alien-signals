@@ -559,15 +559,22 @@ describe("Alien React Library", () => {
       const count = createSignal(0);
       const first = renderHook(() => useSignalValue(count));
       const second = renderHook(() => useSignalValue(count));
+      const third = renderHook(() => useSignalValue(count));
 
       act(() => count(1));
       expect(first.result.current).toBe(1);
       expect(second.result.current).toBe(1);
+      expect(third.result.current).toBe(1);
+
+      second.unmount();
+      act(() => count(2));
+      expect(first.result.current).toBe(2);
+      expect(third.result.current).toBe(2);
 
       first.unmount();
-      act(() => count(2));
-      expect(second.result.current).toBe(2);
-      second.unmount();
+      act(() => count(3));
+      expect(third.result.current).toBe(3);
+      third.unmount();
     });
 
     it("skips React renders when a selected signal slice is unchanged", () => {

@@ -194,7 +194,10 @@ bun run benchmark
 ```
 
 The benchmark validates committed render counts and reports medians across
-multiple samples. Treat its numbers as a local regression signal rather than a
+multiple interleaved samples. It reports automatic React render batching and
+explicit Alien signal-graph batching separately: React batching removes extra
+commits, while `batch` additionally removes intermediate computed/effect
+propagation. Treat the numbers as a local regression signal rather than a
 universal ranking; hardware, runtime versions, application shape, and scheduler
 load all affect results.
 

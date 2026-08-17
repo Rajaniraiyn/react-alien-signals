@@ -6,7 +6,7 @@ import { type ReactNode, useState } from "react";
 import { useStore as useZustandStore } from "zustand";
 import { createStore as createZustandStore } from "zustand/vanilla";
 
-import { createEffect, createSignal, useSignalValue } from "../src";
+import { batch, createEffect, createSignal, useSignalValue } from "../src";
 
 GlobalRegistrator.register();
 
@@ -32,17 +32,23 @@ function median(values: number[]): number {
 }
 
 function measure(cases: Case[], iterations: number): Result[] {
-  const measurements = cases.map(({ name, run }) => {
-    run();
-    const samples: number[] = [];
-    for (let sample = 0; sample < SAMPLES; sample++) {
+  const samplesByName = new Map(cases.map(({ name }) => [name, [] as number[]]));
+
+  for (const benchmark of cases) benchmark.run();
+  for (let sample = 0; sample < SAMPLES; sample++) {
+    for (let offset = 0; offset < cases.length; offset++) {
+      const benchmark = cases[(sample + offset) % cases.length]!;
       const startedAt = performance.now();
-      run();
+      benchmark.run();
       const elapsed = performance.now() - startedAt;
-      samples.push((iterations * 1_000) / elapsed);
+      samplesByName.get(benchmark.name)!.push((iterations * 1_000) / elapsed);
     }
-    return { name, ops: median(samples) };
-  });
+  }
+
+  const measurements = cases.map(({ name }) => ({
+    name,
+    ops: median(samplesByName.get(name)!),
+  }));
   const baseline = measurements[0]!.ops;
 
   return measurements.map(({ name, ops }) => ({
@@ -234,6 +240,27 @@ function automaticallyBatchedReactCases(): Case[] {
         });
         if (hook.result.current !== BATCHED_REACT_WRITES || renders !== initialRenders + 1) {
           throw new Error(`Invalid signal batch: value=${hook.result.current}, renders=${renders}`);
+        }
+        hook.unmount();
+      },
+    },
+    {
+      name: "React Alien Signals + graph batch",
+      run() {
+        const value = createSignal(0);
+        let renders = 0;
+        const hook = renderHook(() => {
+          renders++;
+          return useSignalValue(value);
+        });
+        const initialRenders = renders;
+        act(() => {
+          batch(() => {
+            for (let index = 1; index <= BATCHED_REACT_WRITES; index++) value(index);
+          });
+        });
+        if (hook.result.current !== BATCHED_REACT_WRITES || renders !== initialRenders + 1) {
+          throw new Error(`Invalid graph batch: value=${hook.result.current}, renders=${renders}`);
         }
         hook.unmount();
       },

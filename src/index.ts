@@ -167,20 +167,26 @@ function getExternalStore<T>(signal: ReadableSignal<T>): ExternalSignalStore<T> 
   const cached = externalStores.get(signal) as ExternalSignalStore<T> | undefined;
   if (cached) return cached;
 
-  const listeners = new Set<() => void>();
+  let firstListener: (() => void) | undefined;
+  let additionalListeners: Set<() => void> | undefined;
   let stop: (() => void) | undefined;
 
   const store: ExternalSignalStore<T> = {
     getSnapshot: signal,
     subscribe(notify) {
-      listeners.add(notify);
+      if (firstListener === undefined) {
+        firstListener = notify;
+      } else {
+        (additionalListeners ??= new Set()).add(notify);
+      }
 
-      if (listeners.size === 1) {
+      if (stop === undefined) {
         let initialized = false;
         stop = createEffect(() => {
           signal();
           if (initialized) {
-            for (const listener of listeners) listener();
+            firstListener?.();
+            additionalListeners?.forEach(callListener);
           } else {
             initialized = true;
           }
@@ -188,10 +194,18 @@ function getExternalStore<T>(signal: ReadableSignal<T>): ExternalSignalStore<T> 
       }
 
       return () => {
-        listeners.delete(notify);
-        if (listeners.size === 0) {
+        if (firstListener === notify) {
+          const replacement = additionalListeners?.values().next().value;
+          firstListener = replacement;
+          if (replacement !== undefined) additionalListeners!.delete(replacement);
+        } else {
+          additionalListeners?.delete(notify);
+        }
+
+        if (firstListener === undefined) {
           stop?.();
           stop = undefined;
+          additionalListeners = undefined;
         }
       };
     },
@@ -199,6 +213,10 @@ function getExternalStore<T>(signal: ReadableSignal<T>): ExternalSignalStore<T> 
 
   externalStores.set(signal, store as ExternalSignalStore<unknown>);
   return store;
+}
+
+function callListener(listener: () => void): void {
+  listener();
 }
 
 /**
