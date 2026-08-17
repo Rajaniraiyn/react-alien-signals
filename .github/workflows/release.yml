@@ -29,9 +29,9 @@ jobs:
         shell: bash
         run: |
           package_version="$(bun -e "console.log(require('./package.json').version)")"
-          tag_version="${GITHUB_REF_NAME#v}"
-          if [[ "$tag_version" != "$package_version" ]]; then
-            echo "Tag $GITHUB_REF_NAME does not match package.json version $package_version" >&2
+          expected_tag="v${package_version}"
+          if [[ "$GITHUB_REF_NAME" != "$expected_tag" ]]; then
+            echo "Tag $GITHUB_REF_NAME does not match expected tag $expected_tag from package.json" >&2
             exit 1
           fi
 
@@ -48,7 +48,7 @@ jobs:
         run: bun run build
 
   publish:
-    name: Publish to npm
+    name: Stage package on npm
     needs: verify
     runs-on: ubuntu-latest
     permissions:
@@ -127,3 +127,15 @@ jobs:
       - name: Deploy GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  create-release:
+    name: Create GitHub release
+    needs: deploy-pages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Create release with generated notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes --latest
