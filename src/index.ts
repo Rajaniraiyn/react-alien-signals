@@ -169,15 +169,22 @@ function getExternalStore<T>(signal: ReadableSignal<T>): ExternalSignalStore<T> 
 
   let firstListener: (() => void) | undefined;
   let additionalListeners: Set<() => void> | undefined;
+  let notifyListeners = doNothing;
   let stop: (() => void) | undefined;
+  const notifyAllListeners = () => {
+    firstListener!();
+    additionalListeners!.forEach(callListener);
+  };
 
   const store: ExternalSignalStore<T> = {
     getSnapshot: signal,
     subscribe(notify) {
       if (firstListener === undefined) {
         firstListener = notify;
+        notifyListeners = notify;
       } else {
         (additionalListeners ??= new Set()).add(notify);
+        notifyListeners = notifyAllListeners;
       }
 
       if (stop === undefined) {
@@ -185,8 +192,7 @@ function getExternalStore<T>(signal: ReadableSignal<T>): ExternalSignalStore<T> 
         stop = createEffect(() => {
           signal();
           if (initialized) {
-            firstListener?.();
-            additionalListeners?.forEach(callListener);
+            notifyListeners();
           } else {
             initialized = true;
           }
@@ -206,6 +212,11 @@ function getExternalStore<T>(signal: ReadableSignal<T>): ExternalSignalStore<T> 
           stop?.();
           stop = undefined;
           additionalListeners = undefined;
+          notifyListeners = doNothing;
+        } else if (additionalListeners?.size) {
+          notifyListeners = notifyAllListeners;
+        } else {
+          notifyListeners = firstListener;
         }
       };
     },
@@ -218,6 +229,8 @@ function getExternalStore<T>(signal: ReadableSignal<T>): ExternalSignalStore<T> 
 function callListener(listener: () => void): void {
   listener();
 }
+
+function doNothing(): void {}
 
 /**
  * React hook that subscribes to a writable signal—returning its current value plus a setter function.

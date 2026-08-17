@@ -193,13 +193,17 @@ Zustand:
 bun run benchmark
 ```
 
-The benchmark validates committed render counts and reports medians across
-multiple interleaved samples. It reports automatic React render batching and
-explicit Alien signal-graph batching separately: React batching removes extra
-commits, while `batch` additionally removes intermediate computed/effect
-propagation. Treat the numbers as a local regression signal rather than a
-universal ranking; hardware, runtime versions, application shape, and scheduler
-load all affect results.
+Representative local results on Apple Silicon with Bun 1.3.14 and React 19.2.8:
+
+| Scenario | React Alien Signals | Raw React | Zustand | TanStack | Jotai |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| One commit per write | 200–214k/s | 193–242k/s | 183–213k/s | 133–213k/s | 114–140k/s |
+| 10k writes, React auto-batched | 12.4–13.0M/s | 14.0–15.7M/s | 9.5–12.2M/s | 6.9–8.1M/s | 0.68–0.74M/s |
+| 10k writes, signal graph batched | 46.4–57.8M/s | — | — | — | — |
+
+Each range covers three runs. Every batched case validates the final value and
+exactly one update render. `batch` also collapses intermediate computed and
+effect propagation; React's automatic batching only collapses renders.
 
 ## License
 
