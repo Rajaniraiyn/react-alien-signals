@@ -1,6 +1,13 @@
 {
   "name": "react-alien-signals",
   "version": "0.3.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rajaniraiyn/react-alien-signals.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "types": "./dist/index.d.ts",
   "module": "./dist/index.js",
@@ -17,9 +24,9 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run build",
-    "build": "tsup",
-    "docs": "npx typedoc src/index.ts",
-    "docs:preview": "npx typedoc src/index.ts && npx serve docs"
+    "build": "bun run scripts/build.ts",
+    "docs": "typedoc src/index.ts",
+    "docs:preview": "bun run docs && npx serve docs"
   },
   "dependencies": {},
   "devDependencies": {
@@ -27,11 +34,10 @@
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.2.0",
-    "@testing-library/react-hooks": "^8.0.1",
     "@types/bun": "^1.2.3",
     "@types/react": "^19.0.10",
     "react-dom": "^19.0.0",
-    "tsup": "^8.3.6",
+    "typedoc": "^0.28.20",
     "typescript": "^5.7.3"
   },
   "peerDependencies": {

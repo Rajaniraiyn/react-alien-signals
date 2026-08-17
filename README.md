@@ -1,8 +1,8 @@
 # React Alien Signals
 
-![License](https://img.shields.io/github/license/rajaniraiyn/react-alien-signals)
-![npm](https://img.shields.io/npm/v/react-alien-signals)
-![Build](https://img.shields.io/github/actions/workflow/status/rajaniraiyn/react-alien-signals/docs.yml?branch=main)
+[![License](https://img.shields.io/github/license/rajaniraiyn/react-alien-signals)](https://github.com/rajaniraiyn/react-alien-signals/blob/main/LICENSE)
+[![npm](https://img.shields.io/npm/v/react-alien-signals)](https://www.npmjs.com/package/react-alien-signals)
+[![Build](https://img.shields.io/github/actions/workflow/status/rajaniraiyn/react-alien-signals/ci.yml?branch=main)](https://github.com/rajaniraiyn/react-alien-signals/actions/workflows/ci.yml)
 
 React Alien Signals is a **TypeScript** library that provides hooks built on top of [Alien Signals](https://github.com/stackblitz/alien-signals). It offers a seamless integration with React, ensuring concurrency-safe re-renders without tearing.
 
@@ -129,6 +129,17 @@ function Component({ a }) {
 ## Contributing
 
 Contributions are welcome! Please read the [Contributing Guidelines](CONTRIBUTING.md) before getting started.
+
+## Releasing
+
+Releases are automated from version tags. Update the version in `package.json`, commit the change, then create and push the matching tag:
+
+```bash
+git tag v0.4.0
+git push origin v0.4.0
+```
+
+The release workflow verifies, tests, and builds the package, publishes it to npm through trusted publishing, then deploys the API documentation to GitHub Pages. The tag must exactly match `v` followed by the version in `package.json`.
 
 ## License
 
