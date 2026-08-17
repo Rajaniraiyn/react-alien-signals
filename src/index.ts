@@ -10,8 +10,9 @@
  * - Compute derived state with [createComputed].
  * - Run reactive side-effects with [createEffect].
  * - Manage effect lifecycles using [createSignalScope].
- * - React hooks for subscribing to signal updates: [useSignal], [useSignalValue], [useSetSignal],
- *   [useSignalSelector], [useDeferredSignalValue], [useSignalEffect] and [useSignalScope].
+ * - React hooks for reading, selecting, deferring, and updating signal values.
+ * - Signal effects aligned with React's insertion, layout, and passive phases.
+ * - Effect scopes that start after commit and clean up on unmount.
  * - React automatically batches component renders from signal writes in the same event or task.
  * - Additional hooks like [useComputed] for easier use of computed signals.
  *

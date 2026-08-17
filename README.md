@@ -6,6 +6,8 @@
 
 React Alien Signals is a **TypeScript** library that provides hooks built on top of [Alien Signals](https://github.com/stackblitz/alien-signals). It offers a seamless integration with React, ensuring concurrency-safe re-renders without tearing.
 
+[API reference](https://rajaniraiyn.github.io/react-alien-signals/)
+
 ## Table of Contents
 
 <details>
@@ -113,7 +115,7 @@ React Alien Signals provides several hooks to interact with signals:
 
 - `useSignal(signal)`: Returns `[value, setValue]` tuple for reading and writing
 - `useSignalValue(signal)`: Returns the current value (read-only)
-- `useDeferredSignalValue(signal, initialValue?)`: Returns a deferred signal snapshot
+- `useDeferredSignalValue(signal)`: Returns a deferred signal snapshot
 - `useSignalSelector(signal, selector)`: Subscribes only to the selected value
 - `useSetSignal(signal)`: Returns a setter function (write-only)
 - `useSignalEffect(effectFn)`: Runs a side effect based on signal changes
@@ -125,9 +127,8 @@ React Alien Signals provides several hooks to interact with signals:
 
 ### `useComputed(getter, deps)`
 
-The `useComputed` hook expects a getter and a dependency array.
-The dependency array is similar to a dependency array used in [`useMemo`](https://react.dev/reference/react/useMemo) or [`useEffect`](https://react.dev/reference/react/useEffect)
-Here is an example
+The dependency array follows the same rules as
+[`useMemo`](https://react.dev/reference/react/useMemo).
 
 ```ts
 function Component({ a }) {
@@ -169,21 +170,6 @@ server rendering and abandoned renders do not leak effects. Lifecycle-specific
 signal effects require an explicit, referentially stable signal list so React can
 run them in the requested phase.
 
-## Contributing
-
-Contributions are welcome! Please read the [Contributing Guidelines](CONTRIBUTING.md) before getting started.
-
-## Releasing
-
-Releases are automated from version tags. Update the version in `package.json`, commit the change, then create and push the matching tag:
-
-```bash
-git tag v0.4.0
-git push origin v0.4.0
-```
-
-The release workflow verifies, tests, and builds the package, stages it on npm through trusted publishing for manual approval, deploys the API documentation to GitHub Pages, and creates a GitHub Release with automatically generated notes. The tag must exactly match `v` followed by the version in `package.json`.
-
 ## Benchmarks
 
 Run the local comparison against raw React state, TanStack Store, Jotai, and
@@ -204,6 +190,10 @@ Representative local results on Apple Silicon with Bun 1.3.14 and React 19.2.8:
 Each range covers three runs. Every batched case validates the final value and
 exactly one update render. `batch` also collapses intermediate computed and
 effect propagation; React's automatic batching only collapses renders.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for local setup and pull request checks.
 
 ## License
 
