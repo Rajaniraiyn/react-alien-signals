@@ -139,7 +139,7 @@ git tag v0.4.0
 git push origin v0.4.0
 ```
 
-The release workflow verifies, tests, and builds the package, publishes it to npm through trusted publishing, then deploys the API documentation to GitHub Pages. The tag must exactly match `v` followed by the version in `package.json`.
+The release workflow verifies, tests, and builds the package, stages it on npm through trusted publishing for manual approval, then deploys the API documentation to GitHub Pages. The tag must exactly match `v` followed by the version in `package.json`.
 
 ## License
 
