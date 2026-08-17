@@ -4,7 +4,7 @@
   "packageManager": "bun@1.3.14",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/rajaniraiyn/react-alien-signals.git"
+    "url": "https://github.com/Rajaniraiyn/react-alien-signals"
   },
   "publishConfig": {
     "access": "public"

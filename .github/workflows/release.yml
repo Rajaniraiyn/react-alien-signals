@@ -136,6 +136,7 @@ jobs:
       contents: write
     steps:
       - name: Create release with generated notes
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes --latest
+        uses: softprops/action-gh-release@v3
+        with:
+          generate_release_notes: true
+          make_latest: true
